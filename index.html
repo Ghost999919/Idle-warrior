@@ -1,0 +1,1976 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Idle Shooter Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Custom styles for the game */
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #1a202c; /* Dark background */
+            color: #e2e8f0; /* Light text */
+            display: flex;
+            justify-content: center;
+            align-items: flex-start; /* Align to top for better layout on smaller screens */
+            min-height: 100vh; /* Ensure it takes full viewport height */
+            padding: 20px;
+            box-sizing: border-box;
+        }
+
+        /* Basic container styling */
+        .game-container {
+            background-color: #2d3748; /* Slightly lighter dark background */
+            border-radius: 1rem; /* Rounded corners */
+            box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+            padding: 2rem;
+            max-width: 1200px; /* Increased max width for more content */
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Section titles */
+        h2 {
+            font-size: 1.75rem; /* Larger font for titles */
+            font-weight: bold;
+            color: #63b3ed; /* Blue accent */
+            margin-bottom: 1rem;
+            text-align: center;
+        }
+
+        /* Stat display styling */
+        .stat-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px solid #4a5568; /* Subtle separator */
+        }
+        .stat-item:last-child {
+            border-bottom: none;
+        }
+        .stat-label {
+            font-weight: 600;
+        }
+        .stat-value {
+            color: #a0aec0;
+        }
+
+        /* Health bar styling */
+        .health-bar-container {
+            background-color: #4a5568;
+            border-radius: 0.5rem;
+            height: 1.5rem;
+            overflow: hidden;
+            margin-top: 0.5rem;
+        }
+        .health-bar {
+            height: 100%;
+            background-color: #48bb78; /* Green health */
+            width: 100%; /* Default to full */
+            border-radius: 0.5rem;
+            transition: width 0.3s ease-out; /* Smooth transition for health changes */
+        }
+        .enemy-health-bar .health-bar {
+            background-color: #f56565; /* Red for enemy health */
+        }
+        /* EXP bar styling */
+        .exp-bar-container {
+            background-color: #4a5568;
+            border-radius: 0.5rem;
+            height: 1rem;
+            overflow: hidden;
+            margin-top: 0.25rem;
+        }
+        .exp-bar {
+            height: 100%;
+            background-color: #805ad5; /* Purple EXP bar */
+            width: 0%; /* Default to empty */
+            border-radius: 0.5rem;
+            transition: width 0.3s ease-out;
+        }
+
+        /* Buttons */
+        .btn {
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.2);
+            text-align: center;
+            display: block; /* Make buttons block level for full width */
+            width: 100%; /* Full width within their container */
+        }
+        .btn-primary {
+            background-color: #4299e1; /* Blue */
+            color: white;
+        }
+        .btn-primary:hover {
+            background-color: #3182ce;
+            transform: translateY(-2px);
+        }
+        .btn-success {
+            background-color: #48bb78; /* Green */
+            color: white;
+        }
+        .btn-success:hover {
+            background-color: #38a169;
+            transform: translateY(-2px);
+        }
+        .btn-danger {
+            background-color: #f56565; /* Red */
+            color: white;
+        }
+        .btn-danger:hover {
+            background-color: #e53e3e;
+            transform: translateY(-2px);
+        }
+        .btn-secondary {
+            background-color: #a0aec0; /* Gray */
+            color: #2d3748;
+        }
+        .btn-secondary:hover {
+            background-color: #718096;
+            transform: translateY(-2px);
+        }
+        /* Small button for quests */
+        .btn-sm {
+            padding: 0.4rem 0.8rem;
+            font-size: 0.8rem;
+        }
+
+        /* Grid layout for upgrades and actions */
+        .grid-cols-2 {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 1rem;
+        }
+        .grid-cols-3 {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+        }
+        .grid-cols-4 {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1rem;
+        }
+
+        /* Combat log */
+        #combat-log {
+            background-color: #1a202c;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            max-height: 200px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            color: #cbd5e0;
+        }
+        .log-entry {
+            margin-bottom: 0.25rem;
+        }
+
+        /* Modal styling */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+        }
+        .modal-content {
+            background-color: #2d3748;
+            padding: 2rem;
+            border-radius: 1rem;
+            box-shadow: 0 10px 20px rgba(0, 0, 0, 0.4);
+            max-width: 500px;
+            width: 90%;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+        .modal-content h3 {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #f56565; /* Red for game over */
+        }
+        .modal-content input {
+            background-color: #4a5568;
+            border: 1px solid #63b3ed;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            color: #e2e8f0;
+            width: 100%;
+            box-sizing: border-box;
+        }
+        .modal-content input:focus {
+            outline: none;
+            border-color: #4299e1;
+            box-shadow: 0 0 0 3px rgba(66, 153, 225, 0.5);
+        }
+
+        /* Item card styling */
+        .item-card {
+            background-color: #4a5568;
+            border-radius: 0.5rem;
+            padding: 0.75rem;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            text-align: left;
+            font-size: 0.85rem;
+            position: relative; /* For equipped indicator */
+        }
+        .item-card:hover {
+            background-color: #63708a;
+        }
+        .item-card .item-name {
+            font-weight: bold;
+            color: #90cdf4; /* Light blue for item names */
+            margin-bottom: 0.25rem;
+        }
+        .item-card .item-stats p {
+            margin: 0;
+            line-height: 1.2;
+            color: #cbd5e0;
+        }
+        .item-card .item-cost {
+            font-weight: bold;
+            color: #48bb78; /* Green for cost */
+            margin-top: 0.5rem;
+        }
+        .item-card.equipped::after {
+            content: 'Equipped';
+            position: absolute;
+            top: 5px;
+            right: 5px;
+            background-color: #48bb78;
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 0.3rem;
+        }
+        .item-card .item-stack-count {
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            background-color: rgba(0, 0, 0, 0.4);
+            color: white;
+            font-size: 0.7rem;
+            padding: 2px 6px;
+            border-radius: 0.3rem;
+        }
+
+        /* Active Potion Buffs */
+        #active-potions-container {
+            background-color: #1a202c;
+            border-radius: 0.75rem;
+            padding: 1rem;
+            margin-top: 1rem;
+            max-height: 100px;
+            overflow-y: auto;
+            font-size: 0.9rem;
+            color: #cbd5e0;
+        }
+        .active-potion-entry {
+            margin-bottom: 0.25rem;
+            color: #a78bfa; /* Purple for active buffs */
+        }
+
+        /* Responsive adjustments */
+        @media (min-width: 768px) {
+            .game-container {
+                flex-direction: row; /* Side-by-side on larger screens */
+                gap: 2rem;
+            }
+            .game-section {
+                flex: 1; /* Equal width sections */
+            }
+            .grid-cols-2-md { /* Custom class for medium screens */
+                grid-template-columns: repeat(2, 1fr);
+            }
+            .grid-cols-3-md { /* Custom class for medium screens */
+                grid-template-columns: repeat(3, 1fr);
+            }
+            .grid-cols-4-md {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
+        @media (max-width: 767px) {
+            .game-container {
+                padding: 1rem;
+            }
+            .grid-cols-2, .grid-cols-3, .grid-cols-4 {
+                grid-template-columns: 1fr; /* Stack columns on small screens */
+            }
+            .btn {
+                font-size: 0.9rem;
+                padding: 0.6rem 1rem;
+            }
+            h2 {
+                font-size: 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 flex items-center justify-center min-h-screen p-4">
+
+    <div id="game-container" class="game-container">
+        <div class="game-section flex-1">
+            <h2 class="text-blue-400">Character Stats</h2>
+            <div class="bg-gray-700 p-4 rounded-lg shadow-md mb-4">
+                <div class="stat-item">
+                    <span class="stat-label">Level:</span>
+                    <span id="char-level" class="stat-value">1</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">EXP:</span>
+                    <span id="char-exp-text" class="stat-value">0/100</span>
+                </div>
+                <div class="exp-bar-container">
+                    <div id="char-exp-bar" class="exp-bar" style="width: 0%;"></div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Health:</span>
+                    <span id="char-health-text" class="stat-value">100/100</span>
+                </div>
+                <div class="health-bar-container">
+                    <div id="char-health-bar" class="health-bar" style="width: 100%;"></div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Damage:</span>
+                    <span id="char-damage" class="stat-value">10</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Defense:</span>
+                    <span id="char-defense" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Crit Rate:</span>
+                    <span id="char-crit-rate" class="stat-value">5%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Crit Damage:</span>
+                    <span id="char-crit-damage" class="stat-value">150%</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Attack Speed:</span>
+                    <span id="char-attack-speed" class="stat-value">1.0 APS</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Money:</span>
+                    <span id="char-money" class="stat-value">0</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Current Stage:</span>
+                    <span id="char-stage" class="stat-value">1</span>
+                </div>
+            </div>
+
+            <h2 class="text-blue-400">Base Upgrades</h2>
+            <div class="grid grid-cols-2-md gap-3">
+                <button id="upgrade-health" class="btn btn-primary">Upgrade Health</button>
+                <button id="upgrade-damage" class="btn btn-primary">Upgrade Damage</button>
+                <button id="upgrade-defense" class="btn btn-primary">Upgrade Defense</button>
+                <button id="upgrade-crit-rate" class="btn btn-primary">Upgrade Crit Rate</button>
+                <button id="upgrade-crit-damage" class="btn btn-primary">Upgrade Crit Damage</button>
+                <button id="upgrade-attack-speed" class="btn btn-primary">Upgrade Attack Speed</button>
+            </div>
+        </div>
+
+        <div class="game-section flex-1">
+            <h2 class="text-purple-400">Equipped Items</h2>
+            <div id="equipped-items-container" class="bg-gray-700 p-4 rounded-lg shadow-md mb-4 grid grid-cols-2-md gap-3">
+                <div id="equipped-weapon" class="item-card bg-gray-800 text-center py-4">Weapon Slot</div>
+                <div id="equipped-armor" class="item-card bg-gray-800 text-center py-4">Armor Slot</div>
+                <div id="equipped-shield" class="item-card bg-gray-800 text-center py-4">Shield Slot</div>
+                <div id="equipped-gloves" class="item-card bg-gray-800 text-center py-4">Gloves Slot</div>
+                <div id="equipped-shoes" class="item-card bg-gray-800 text-center py-4">Shoes Slot</div>
+            </div>
+
+            <h2 class="text-yellow-400">Inventory (<span id="inventory-count">0</span>/30)</h2>
+            <div id="inventory-container" class="bg-gray-700 p-4 rounded-lg shadow-md mb-4 grid grid-cols-3-md gap-3 max-h-64 overflow-y-auto">
+                <p id="empty-inventory-message" class="col-span-full text-center text-gray-400">Inventory is empty.</p>
+            </div>
+
+            <h2 class="text-green-400">Shop</h2>
+            <div id="shop-container" class="bg-gray-700 p-4 rounded-lg shadow-md mb-4 grid grid-cols-2-md gap-3 max-h-64 overflow-y-auto">
+                <p id="empty-shop-message" class="col-span-full text-center text-gray-400">Click 'Refresh Shop' to see items.</p>
+            </div>
+            <button id="refresh-shop" class="btn btn-secondary mt-2">Refresh Shop</button>
+
+            <h2 class="text-indigo-400 mt-4">Active Quests</h2>
+            <div id="active-quests-container" class="bg-gray-700 p-4 rounded-lg shadow-md max-h-48 overflow-y-auto">
+                <p id="no-active-quests-message" class="text-center text-gray-400">No active quests.</p>
+            </div>
+            <button id="get-new-quest-btn" class="btn btn-primary mt-3">Get New Quest</button>
+            <p id="quest-refresh-timer" class="text-sm text-gray-400 text-center mt-2">Next refresh in: --:--</p>
+        </div>
+
+        <div class="game-section flex-1">
+            <h2 class="text-red-400">Enemy Info</h2>
+            <div class="bg-gray-700 p-4 rounded-lg shadow-md mb-4">
+                <div class="stat-item">
+                    <span class="stat-label">Stage:</span>
+                    <span id="enemy-stage" class="stat-value">1</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Enemy Health:</span>
+                    <span id="enemy-health-text" class="stat-value">50/50</span>
+                </div>
+                <div class="health-bar-container enemy-health-bar">
+                    <div id="enemy-health-bar" class="health-bar" style="width: 100%;"></div>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Enemy Damage:</span>
+                    <span id="enemy-damage" class="stat-value">5</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">Bounty:</span>
+                    <span id="enemy-bounty" class="stat-value">10</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-label">EXP Reward:</span>
+                    <span id="enemy-exp-reward" class="stat-value">10</span>
+                </div>
+            </div>
+
+            <h2 class="text-green-400">Combat Log</h2>
+            <div id="combat-log" class="bg-gray-800 p-4 rounded-lg shadow-md">
+                </div>
+
+            <h2 class="text-purple-400 mt-4">Active Potions</h2>
+            <div id="active-potions-container" class="bg-gray-800 p-4 rounded-lg shadow-md">
+                <p id="no-active-potions" class="text-center text-gray-400">No active buffs.</p>
+            </div>
+
+            <div id="game-actions" class="grid grid-cols-2-md gap-3 mt-4">
+                <button id="continue-stage" class="btn btn-success hidden">Continue to Next Stage</button>
+                <button id="start-combat" class="btn btn-success">Start Combat</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="game-over-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-red-500">GAME OVER!</h3>
+            <p class="text-lg">You have been defeated.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button id="restart-current-stage" class="btn btn-success">Restart Current Stage</button>
+                <button id="choose-lower-stage" class="btn btn-secondary">Choose Lower Stage</button>
+            </div>
+            <div id="lower-stage-input-container" class="hidden">
+                <input type="number" id="lower-stage-input" placeholder="Enter target stage (e.g., 1)">
+                <button id="confirm-lower-stage" class="btn btn-primary mt-3">Confirm Stage</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="stage-clear-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-green-500">STAGE CLEARED!</h3>
+            <p class="text-lg">You have defeated the boss of Stage <span id="cleared-stage-number">1</span>.</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button id="proceed-next-stage" class="btn btn-success">Proceed to Next Stage</button>
+                <button id="restart-cleared-stage" class="btn btn-secondary">Restart Current Stage</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="post-enemy-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 class="text-blue-400">Enemy Defeated!</h3>
+            <p id="post-enemy-message" class="text-lg">What would you like to do?</p>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <button id="continue-next-fight" class="btn btn-success">Continue Combat</button>
+                <button id="go-to-stage-select" class="btn btn-secondary">Go to Stage Select</button>
+            </div>
+            <div id="post-enemy-stage-input-container" class="hidden">
+                <input type="number" id="post-enemy-stage-input" placeholder="Enter target stage (e.g., 1)">
+                <button id="confirm-post-enemy-stage" class="btn btn-primary mt-3">Confirm Stage</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="item-detail-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h3 id="item-detail-name" class="text-blue-400">Item Name</h3>
+            <div id="item-detail-stats" class="text-left text-gray-300"></div>
+            <p id="item-detail-value" class="text-lg font-bold text-green-400"></p>
+            <div class="grid grid-cols-2 gap-3">
+                <button id="item-detail-action-btn" class="btn btn-primary">Action</button>
+                <button id="item-detail-sell" class="btn btn-danger">Sell</button>
+                <button id="item-detail-close" class="btn btn-secondary col-span-2">Close</button>
+                <button id="item-detail-submit-quest" class="btn btn-primary hidden col-span-2">Submit for Quest</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State Variables
+        let character = {
+            base_health: 100,
+            base_damage: 10,
+            base_defense: 0,
+            base_critical_rate: 0.05, // 5%
+            base_critical_damage_multiplier: 1.5, // 150%
+            base_attack_speed: 1.0, // Attacks per second
+
+            health: 100, // Current health, will be capped by effective_stats.max_health
+            money: 0,
+            current_stage: 1,
+            level: 1,
+            exp: 0,
+            exp_to_next_level: 100, // Initial EXP needed for level 2
+
+            enemies_defeated_in_stage: 0, // Tracks regular enemies defeated in current stage
+            is_boss_fight: false, // True if the next enemy is the boss
+
+            equipped_items: {
+                weapon: null,
+                armor: null,
+                shield: null,
+                gloves: null,
+                shoes: null
+            },
+            inventory: [], // Max 30 items
+            inventory_limit: 30,
+            active_potions: [], // Stores active potion effects { type: 'damage_boost', amount: 10, duration: 30, end_time: Date.now() + 30000 }
+
+            active_quests: [],
+            completed_non_repeatable_quest_ids: new Set(), // To track non-repeatable quests by ID
+        };
+
+        // Calculated effective stats (base + equipped items + active potions)
+        let effective_stats = {
+            max_health: 0,
+            damage: 0,
+            defense: 0,
+            critical_rate: 0,
+            critical_damage_multiplier: 0,
+            attack_speed: 0,
+            // New temporary boost multipliers
+            gold_multiplier: 1.0,
+            item_drop_chance_increase: 0.0, // Flat increase to base drop chance
+            exp_multiplier: 1.0,
+        };
+
+        let enemy = {
+            health: 0,
+            max_health: 0,
+            damage: 0,
+            bounty: 0,
+            exp_reward: 0, // EXP reward from enemy
+            item_drop: null, // Potential item drop from regular enemies
+            stage: 0,
+            is_boss: false, // Flag to indicate if it's a boss
+        };
+
+        let shopItems = [];
+        const SHOP_ITEM_COUNT = 5;
+        const MAX_STACK_COUNT = 99; // Maximum stack size for items
+        const BOSS_EQUIPMENT_DROP_CHANCE = 0.4; // 40% chance for boss to drop equipment
+
+        const MAX_ACTIVE_QUESTS = 6; // New: Maximum number of active quests
+        const QUEST_REFRESH_DURATION_SECONDS = 300; // New: Quests refresh every 5 minutes (300 seconds)
+        let questRefreshTimerInterval; // New: Variable to hold the setInterval for quest refresh
+        let timeToNextQuestRefresh = QUEST_REFRESH_DURATION_SECONDS; // New: Countdown for quest refresh
+
+        let gameInterval;
+        let isCombatActive = false;
+        let combatLog = document.getElementById('combat-log');
+        const INVENTORY_LIMIT = 30;
+
+        // --- Utility Functions ---
+        function appendLog(message, color = 'text-gray-300') {
+            const logEntry = document.createElement('p');
+            logEntry.className = `log-entry ${color}`;
+            logEntry.textContent = message;
+            combatLog.prepend(logEntry); // Add to top
+            // Keep log from getting too long
+            if (combatLog.children.length > 50) {
+                combatLog.removeChild(combatLog.lastChild);
+            }
+        }
+
+        function calculateEffectiveStats() {
+            // Reset temporary potion effects first
+            effective_stats.gold_multiplier = 1.0;
+            effective_stats.item_drop_chance_increase = 0.0;
+            effective_stats.exp_multiplier = 1.0;
+
+            // Start with base character stats
+            effective_stats.max_health = character.base_health;
+            effective_stats.damage = character.base_damage;
+            effective_stats.defense = character.base_defense;
+            effective_stats.critical_rate = character.base_critical_rate;
+            effective_stats.critical_damage_multiplier = character.base_critical_damage_multiplier;
+            effective_stats.attack_speed = character.base_attack_speed;
+
+            // Add stats from equipped items
+            for (const slot in character.equipped_items) {
+                const item = character.equipped_items[slot];
+                if (item) {
+                    if (item.stats.health) effective_stats.max_health += item.stats.health;
+                    if (item.stats.damage) effective_stats.damage += item.stats.damage;
+                    if (item.stats.defense) effective_stats.defense += item.stats.defense;
+                    if (item.stats.critical_rate) effective_stats.critical_rate += item.stats.critical_rate;
+                    if (item.stats.critical_damage_multiplier) effective_stats.critical_damage_multiplier += item.stats.critical_damage_multiplier;
+                    if (item.stats.attack_speed) effective_stats.attack_speed += item.stats.attack_speed;
+                }
+            }
+
+            // Apply active potion buffs
+            const now = Date.now();
+            character.active_potions = character.active_potions.filter(potion => {
+                if (potion.end_time > now) {
+                    switch (potion.effect_type) {
+                        case 'damage_boost':
+                            effective_stats.damage += potion.stats.damage; // Use potion.stats.damage
+                            break;
+                        case 'attack_speed_boost':
+                            effective_stats.attack_speed += potion.stats.attack_speed; // Use potion.stats.attack_speed
+                            break;
+                        case 'crit_rate_boost':
+                            effective_stats.critical_rate += potion.stats.critical_rate; // Use potion.stats.critical_rate
+                            break;
+                        case 'crit_damage_boost':
+                            effective_stats.critical_damage_multiplier += potion.stats.critical_damage_multiplier; // Use potion.stats.critical_damage_multiplier
+                            break;
+                        case 'health_boost': // Temporary max health boost
+                            effective_stats.max_health += potion.stats.health; // Use potion.stats.health
+                            break;
+                        case 'gold_drop_boost':
+                            effective_stats.gold_multiplier += potion.stats.gold_multiplier; // Add to multiplier
+                            break;
+                        case 'item_drop_boost':
+                            effective_stats.item_drop_chance_increase += potion.stats.item_drop_chance_increase; // Add to chance
+                            break;
+                        case 'exp_boost':
+                            effective_stats.exp_multiplier += potion.stats.exp_multiplier; // Add to multiplier
+                            break;
+                    }
+                    return true; // Keep active potion
+                } else {
+                    appendLog(`Potion effect (${potion.name}) wore off.`, 'text-gray-500');
+                    return false; // Remove expired potion
+                }
+            });
+
+
+            // Apply caps/minimums
+            effective_stats.attack_speed = Math.max(0.1, effective_stats.attack_speed); // Minimum 0.1 APS
+            effective_stats.critical_rate = Math.min(1.0, effective_stats.critical_rate); // Max 100% crit rate
+            effective_stats.critical_damage_multiplier = Math.max(1.0, effective_stats.critical_damage_multiplier); // Min 1x crit damage
+            effective_stats.defense = Math.max(0, effective_stats.defense); // Min 0 defense
+            effective_stats.gold_multiplier = Math.max(1.0, effective_stats.gold_multiplier); // Min 1x gold
+            effective_stats.item_drop_chance_increase = Math.min(0.7, Math.max(0.0, effective_stats.item_drop_chance_increase)); // Max 70% additional chance
+            effective_stats.exp_multiplier = Math.max(1.0, effective_stats.exp_multiplier); // Min 1x exp
+
+
+            // Adjust current health if max health changes
+            character.health = Math.min(character.health, effective_stats.max_health);
+        }
+
+        function getExpToNextLevel(level) {
+            // Simple exponential formula for EXP needed: level * 100 + (level-1)^2 * 50
+            return Math.floor(level * 100 + Math.pow(level - 1, 2) * 50);
+        }
+
+        function checkLevelUp() {
+            while (character.exp >= character.exp_to_next_level) {
+                character.exp -= character.exp_to_next_level;
+                character.level++;
+                character.exp_to_next_level = getExpToNextLevel(character.level);
+                resetCharacterHealth(); // Fully heal on level up
+                appendLog(`Character leveled up to Level ${character.level}!`, 'text-purple-400');
+            }
+        }
+
+        function updateUI() {
+            calculateEffectiveStats(); // Recalculate effective stats before updating UI
+
+            // Character Stats
+            document.getElementById('char-level').textContent = character.level;
+            document.getElementById('char-exp-text').textContent = `${Math.floor(character.exp)}/${character.exp_to_next_level}`;
+            document.getElementById('char-exp-bar').style.width = `${(character.exp / character.exp_to_next_level) * 100}%`;
+            document.getElementById('char-health-text').textContent = `${Math.floor(character.health)}/${Math.floor(effective_stats.max_health)}`;
+            document.getElementById('char-health-bar').style.width = `${(character.health / effective_stats.max_health) * 100}%`;
+            document.getElementById('char-damage').textContent = Math.floor(effective_stats.damage);
+            document.getElementById('char-defense').textContent = Math.floor(effective_stats.defense);
+            document.getElementById('char-crit-rate').textContent = `${(effective_stats.critical_rate * 100).toFixed(1)}%`;
+            document.getElementById('char-crit-damage').textContent = `${(effective_stats.critical_damage_multiplier).toFixed(2)}x`;
+            document.getElementById('char-attack-speed').textContent = `${effective_stats.attack_speed.toFixed(2)} APS`;
+            document.getElementById('char-money').textContent = character.money;
+            document.getElementById('char-stage').textContent = character.current_stage;
+
+            // Enemy Stats
+            // Display current enemy progress within the stage
+            document.getElementById('enemy-stage').textContent = `Stage ${enemy.stage} - ${enemy.is_boss ? 'Boss' : `Enemy ${character.enemies_defeated_in_stage + 1}/10`}`;
+            document.getElementById('enemy-health-text').textContent = `${Math.floor(enemy.health)}/${Math.floor(enemy.max_health)}`;
+            document.getElementById('enemy-health-bar').style.width = `${(enemy.health / enemy.max_health) * 100}%`;
+            document.getElementById('enemy-damage').textContent = Math.floor(enemy.damage);
+            document.getElementById('enemy-bounty').textContent = enemy.bounty;
+            document.getElementById('enemy-exp-reward').textContent = enemy.exp_reward; // Display EXP reward
+
+            // Update base upgrade button costs
+            document.getElementById('upgrade-health').textContent = `Upgrade Health (Cost: ${getUpgradeCost('health')})`;
+            document.getElementById('upgrade-damage').textContent = `Upgrade Damage (Cost: ${getUpgradeCost('damage')})`;
+            document.getElementById('upgrade-defense').textContent = `Upgrade Defense (Cost: ${getUpgradeCost('defense')})`;
+            document.getElementById('upgrade-crit-rate').textContent = `Upgrade Crit Rate (Cost: ${getUpgradeCost('crit_rate')})`;
+            document.getElementById('upgrade-crit-damage').textContent = `Upgrade Crit Damage (Cost: ${getUpgradeCost('crit_damage')})`;
+            document.getElementById('upgrade-attack-speed').textContent = `Upgrade Attack Speed (Cost: ${getUpgradeCost('attack_speed')})`;
+
+            renderEquippedItems();
+            renderInventory();
+            renderShop();
+            renderActivePotions(); // Render active potions
+            renderActiveQuests(); // Render active quests
+
+            // Update quest refresh timer display
+            const minutes = Math.floor(timeToNextQuestRefresh / 60);
+            const seconds = timeToNextQuestRefresh % 60;
+            document.getElementById('quest-refresh-timer').textContent = `Next refresh in: ${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+        }
+
+        function getUpgradeCost(stat_type) {
+            switch (stat_type) {
+                case "health":
+                    return Math.floor(character.base_health * 0.2) + 50;
+                case "damage":
+                    return Math.floor(character.base_damage * 0.5) + 30;
+                case "defense":
+                    return Math.floor(character.base_defense * 0.8) + 40;
+                case "crit_rate":
+                    return Math.floor(character.base_critical_rate * 500) + 75;
+                case "crit_damage":
+                    return Math.floor(character.base_critical_damage_multiplier * 100) + 100;
+                case "attack_speed":
+                    return Math.floor(character.base_attack_speed * 150) + 120;
+                default:
+                    return 0;
+            }
+        }
+
+        function spawnEnemy(stage) {
+            // Determine if it's a boss fight based on enemies defeated in current stage
+            if (character.enemies_defeated_in_stage >= 10) {
+                enemy.is_boss = true;
+                enemy.stage = stage;
+                // Boss stats (fixed and scaled higher)
+                enemy.max_health = Math.floor(500 + (stage - 1) * 100);
+                enemy.health = enemy.max_health;
+                enemy.damage = Math.floor(15 + (stage - 1) * 5);
+                enemy.bounty = Math.floor(50 + (stage - 1) * 20);
+                enemy.exp_reward = Math.floor(75 + (stage - 1) * 30);
+                // Boss drops (equipment, money, treasure)
+                enemy.item_drop = null; // Boss doesn't drop a regular item
+                enemy.boss_drops = generateBossDrops(stage); // Generate specific boss drops
+                appendLog(`--- A mighty BOSS appears! (Stage ${stage}) ---`, 'text-red-400');
+            } else {
+                enemy.is_boss = false;
+                enemy.stage = stage;
+                // Regular enemy stats with randomness
+                const baseHealth = 50 + (stage - 1) * 25;
+                const baseDamage = 5 + (stage - 1) * 3;
+                const baseBounty = 10 + (stage - 1) * 5;
+                const baseExp = 15 + (stage - 1) * 7;
+
+                // Apply +/- 20% randomness
+                enemy.max_health = Math.floor(baseHealth * (1 + Math.random() * 0.4 - 0.2));
+                enemy.health = enemy.max_health;
+                enemy.damage = Math.floor(baseDamage * (1 + Math.random() * 0.4 - 0.2));
+                enemy.bounty = Math.floor(baseBounty * (1 + Math.random() * 0.4 - 0.2));
+                enemy.exp_reward = Math.floor(baseExp * (1 + Math.random() * 0.4 - 0.2));
+                // Regular enemy drop (treasure/trophy)
+                if (Math.random() < (0.3 + effective_stats.item_drop_chance_increase)) { // 30% base chance + potion boost
+                    enemy.item_drop = generateItem('treasure', 1.0); // Shop quality for regular drops
+                    appendLog(`Enemy might drop: ${enemy.item_drop.name}`, 'text-gray-400');
+                } else {
+                    enemy.item_drop = null;
+                }
+                appendLog(`--- Spawning Enemy ${character.enemies_defeated_in_stage + 1}/10 (Stage ${stage}) ---`, 'text-yellow-400');
+            }
+            updateUI();
+        }
+
+        function startCombat() {
+            if (isCombatActive) return; // Prevent multiple intervals
+            isCombatActive = true;
+            document.getElementById('start-combat').classList.add('hidden');
+            document.getElementById('continue-stage').classList.add('hidden'); // Hide continue button if visible
+
+            // If starting a new stage or restarting a stage, ensure enemy count and boss flag are reset
+            if (character.enemies_defeated_in_stage === 0 && !character.is_boss_fight) {
+                character.is_boss_fight = false;
+            }
+
+            spawnEnemy(character.current_stage);
+            appendLog("Combat started!", 'text-green-400');
+
+            // Set interval based on effective attack speed
+            // The interval needs to be dynamic, so we clear and set it again if APS changes from potions
+            function combatTick() {
+                // Character attacks
+                let char_dmg = effective_stats.damage;
+                let isCritical = false;
+                if (Math.random() < effective_stats.critical_rate) {
+                    char_dmg *= effective_stats.critical_damage_multiplier;
+                    isCritical = true;
+                }
+                char_dmg = Math.floor(char_dmg); // Ensure integer damage
+
+                enemy.health -= char_dmg;
+                if (enemy.health < 0) enemy.health = 0;
+
+                appendLog(`Character hits for ${char_dmg} damage.${isCritical ? ' (CRITICAL!)' : ''} Enemy Health: ${Math.floor(enemy.health)}/${Math.floor(enemy.max_health)}`);
+
+                if (enemy.health <= 0) {
+                    // Enemy defeated logic
+                    appendLog(`Enemy defeated! You earned ${enemy.bounty} money and ${enemy.exp_reward} EXP.`, 'text-green-400');
+                    
+                    // Apply gold and EXP multipliers from potions
+                    character.money += Math.floor(enemy.bounty * effective_stats.gold_multiplier);
+                    character.exp += Math.floor(enemy.exp_reward * effective_stats.exp_multiplier);
+
+                    checkLevelUp(); // Check for level up after gaining EXP
+
+                    // Update quest progress for kill quests
+                    character.active_quests.forEach(quest => {
+                        if (!quest.completed && quest.target_stage === character.current_stage) {
+                            if (enemy.is_boss && quest.type === 'kill_boss') {
+                                quest.current_progress++;
+                                appendLog(`Boss Quest Progress: ${quest.current_progress}/${quest.target_count}`, 'text-indigo-300');
+                            } else if (!enemy.is_boss && quest.type === 'kill_enemies') {
+                                quest.current_progress++;
+                                appendLog(`Enemy Quest Progress: ${quest.current_progress}/${quest.target_count}`, 'text-indigo-300');
+                            }
+                        }
+                    });
+
+                    // Handle item drops
+                    if (enemy.is_boss) {
+                        // Boss drops
+                        const bossDrops = enemy.boss_drops;
+                        character.money += bossDrops.money;
+                        appendLog(`Boss dropped ${bossDrops.money} money!`, 'text-yellow-300');
+                        
+                        if (bossDrops.equipment) { // Check if equipment was generated
+                            if (addItemToInventory(bossDrops.equipment)) {
+                                appendLog(`Boss dropped a powerful ${bossDrops.equipment.name}!`, 'text-yellow-300');
+                            } else {
+                                appendLog(`Inventory full! Could not pick up ${bossDrops.equipment.name}.`, 'text-red-300');
+                            }
+                        } else {
+                            appendLog(`Boss did not drop any equipment this time.`, 'text-gray-500');
+                        }
+
+                        if (addItemToInventory(bossDrops.treasure)) {
+                            if (addItemToInventory(bossDrops.treasure)) {
+                                appendLog(`Boss dropped a valuable ${bossDrops.treasure.name}!`, 'text-yellow-300');
+                            } else {
+                                appendLog(`Inventory full! Could not pick up ${bossDrops.treasure.name}.`, 'text-red-300');
+                            }
+                        }
+
+                        stopCombat(); // Stop current combat interval
+                        appendLog(`Stage ${character.current_stage} cleared!`, 'text-green-500');
+                        showStageClearModal(); // Show new modal for stage clear
+                        character.enemies_defeated_in_stage = 0; // Reset for next stage
+                        character.is_boss_fight = false; // Reset boss flag
+                    } else {
+                        // Regular enemy drops
+                        if (enemy.item_drop) {
+                            if (addItemToInventory(enemy.item_drop)) {
+                                appendLog(`Enemy dropped ${enemy.item_drop.name}!`, 'text-yellow-300');
+                            } else {
+                                appendLog(`Inventory full! Could not pick up ${enemy.item_drop.name}.`, 'text-red-300');
+                            }
+                        }
+
+                        stopCombat(); // Stop current combat interval
+                        character.enemies_defeated_in_stage++;
+                        showPostEnemyModal(); // Show decision modal after regular enemy defeat
+                    }
+                    return;
+                }
+
+                // Enemy attacks
+                let true_damage_taken = Math.max(0, enemy.damage - effective_stats.defense);
+                character.health -= true_damage_taken;
+                if (character.health < 0) character.health = 0;
+
+                appendLog(`Enemy hits for ${Math.floor(true_damage_taken)} damage. Character Health: ${Math.floor(character.health)}/${Math.floor(effective_stats.max_health)}`, 'text-red-400');
+
+                if (character.health <= 0) {
+                    // Character defeated logic
+                    appendLog("You have been defeated!", 'text-red-500');
+                    stopCombat();
+                    showGameOverModal();
+                    return;
+                }
+                updateUI();
+
+                // Re-adjust interval if attack speed changed (e.g., due to potion)
+                clearInterval(gameInterval);
+                gameInterval = setInterval(combatTick, 1000 / effective_stats.attack_speed);
+            }
+            gameInterval = setInterval(combatTick, 1000 / effective_stats.attack_speed);
+        }
+
+        function stopCombat() {
+            clearInterval(gameInterval);
+            isCombatActive = false;
+            document.getElementById('start-combat').classList.remove('hidden'); // Show start combat button again
+        }
+
+        function resetCharacterHealth() {
+            character.health = effective_stats.max_health; // Reset to effective max health
+            updateUI();
+            appendLog("Character health restored!", 'text-blue-300');
+        }
+
+        // --- Base Upgrade Functions ---
+        function upgradeStat(stat_type) {
+            let cost = getUpgradeCost(stat_type);
+
+            if (character.money < cost) {
+                appendLog(`Not enough money to upgrade ${stat_type}. Needs ${cost} money.`, 'text-red-300');
+                return;
+            }
+
+            character.money -= cost;
+            let message = "";
+
+            switch (stat_type) {
+                case "health":
+                    character.base_health += 20;
+                    message = `Max Health upgraded to ${character.base_health}.`;
+                    break;
+                case "damage":
+                    character.base_damage += 5;
+                    message = `Damage upgraded to ${character.base_damage}.`;
+                    break;
+                case "defense":
+                    if (character.base_defense >= 50) { // Cap defense for balance
+                        appendLog("Defense is already maxed out (Max 50).", 'text-yellow-300');
+                        character.money += cost; // Refund money
+                        return;
+                    }
+                    character.base_defense += 2;
+                    message = `Defense upgraded to ${character.base_defense}.`;
+                    break;
+                case "crit_rate":
+                    if (character.base_critical_rate >= 0.4) { // Cap critical rate at 40%
+                        appendLog("Critical Rate is already maxed out (Max 40%).", 'text-yellow-300');
+                        character.money += cost; // Refund money
+                        return;
+                    }
+                    character.base_critical_rate = Math.min(0.4, character.base_critical_rate + 0.01); // Increase by 1%
+                    message = `Critical Rate upgraded to ${(character.base_critical_rate*100).toFixed(0)}%.`;
+                    break;
+                case "crit_damage":
+                    if (character.base_critical_damage_multiplier >= 2.5) { // Cap critical damage at 250%
+                        appendLog("Critical Damage is already maxed out (Max 2.5x).", 'text-yellow-300');
+                        character.money += cost; // Refund money
+                        return;
+                    }
+                    character.base_critical_damage_multiplier = Math.min(2.5, character.base_critical_damage_multiplier + 0.1); // Increase by 10%
+                    message = `Critical Damage Multiplier upgraded to ${character.base_critical_damage_multiplier.toFixed(1)}x.`;
+                    break;
+                case "attack_speed":
+                    if (character.base_attack_speed >= 5.0) { // Cap attack speed at 5 APS
+                        appendLog("Attack Speed is already maxed out (Max 5.0 APS).", 'text-yellow-300');
+                        character.money += cost; // Refund money
+                        return;
+                    }
+                    character.base_attack_speed = Math.min(5.0, character.base_attack_speed + 0.05); // Increase by 0.05 APS
+                    message = `Attack Speed upgraded to ${character.base_attack_speed.toFixed(2)} APS.`;
+                    break;
+            }
+            appendLog(`${message} Cost: ${cost} money.`, 'text-blue-300');
+            updateUI();
+        }
+
+        // --- Game Over Modal Logic ---
+        const gameOverModal = document.getElementById('game-over-modal');
+        const restartCurrentStageBtn = document.getElementById('restart-current-stage');
+        const chooseLowerStageBtn = document.getElementById('choose-lower-stage');
+        const lowerStageInputContainer = document.getElementById('lower-stage-input-container');
+        const lowerStageInput = document.getElementById('lower-stage-input');
+        const confirmLowerStageBtn = document.getElementById('confirm-lower-stage');
+
+        function showGameOverModal() {
+            gameOverModal.classList.remove('hidden');
+            lowerStageInputContainer.classList.add('hidden'); // Hide input initially
+            lowerStageInput.value = ''; // Clear input
+        }
+
+        function hideGameOverModal() {
+            gameOverModal.classList.add('hidden');
+        }
+
+        restartCurrentStageBtn.addEventListener('click', () => {
+            hideGameOverModal();
+            resetCharacterHealth();
+            character.enemies_defeated_in_stage = 0; // Reset enemy count for current stage
+            character.is_boss_fight = false; // Reset boss flag
+            appendLog(`Restarting at Stage ${character.current_stage}. Prepare for battle!`, 'text-purple-300');
+        });
+
+        chooseLowerStageBtn.addEventListener('click', () => {
+            lowerStageInputContainer.classList.remove('hidden');
+            lowerStageInput.placeholder = `Enter target stage (1 to ${character.current_stage - 1})`;
+        });
+
+        confirmLowerStageBtn.addEventListener('click', () => {
+            const targetStage = parseInt(lowerStageInput.value);
+            if (isNaN(targetStage) || targetStage < 1 || targetStage >= character.current_stage) {
+                appendLog("Please enter a valid lower stage number.", 'text-red-300');
+                return;
+            }
+            character.current_stage = targetStage;
+            character.enemies_defeated_in_stage = 0; // Reset enemy count for new stage
+            character.is_boss_fight = false; // Reset boss flag
+            resetCharacterHealth();
+            hideGameOverModal();
+            appendLog(`Returning to Stage ${character.current_stage}. Good luck farming!`, 'text-purple-300');
+        });
+
+        // --- Stage Clear Modal Logic ---
+        const stageClearModal = document.getElementById('stage-clear-modal');
+        const clearedStageNumberSpan = document.getElementById('cleared-stage-number');
+        const proceedNextStageBtn = document.getElementById('proceed-next-stage');
+        const restartClearedStageBtn = document.getElementById('restart-cleared-stage');
+
+        function showStageClearModal() {
+            clearedStageNumberSpan.textContent = character.current_stage; // Show the stage that was just cleared
+            stageClearModal.classList.remove('hidden');
+        }
+
+        function hideStageClearModal() {
+            stageClearModal.classList.add('hidden');
+        }
+
+        proceedNextStageBtn.addEventListener('click', () => {
+            hideStageClearModal();
+            character.current_stage++; // Move to next stage
+            character.enemies_defeated_in_stage = 0; // Reset enemy count for new stage
+            character.is_boss_fight = false; // Reset boss flag
+            resetCharacterHealth(); // Heal character
+            appendLog(`Advancing to Stage ${character.current_stage}!`, 'text-blue-300');
+            // Player will manually click start combat for the new stage
+        });
+
+        restartClearedStageBtn.addEventListener('click', () => {
+            hideStageClearModal();
+            // character.current_stage remains the same
+            character.enemies_defeated_in_stage = 0; // Reset enemy count to start stage over
+            character.is_boss_fight = false; // Reset boss flag
+            resetCharacterHealth(); // Heal character
+            appendLog(`Restarting Stage ${character.current_stage}. Good luck!`, 'text-blue-300');
+            // Player will manually click start combat to restart the stage
+        });
+
+        // --- Post Enemy Modal Logic ---
+        const postEnemyModal = document.getElementById('post-enemy-modal');
+        const postEnemyMessage = document.getElementById('post-enemy-message');
+        const continueNextFightBtn = document.getElementById('continue-next-fight');
+        const goToStageSelectBtn = document.getElementById('go-to-stage-select');
+        const postEnemyStageInputContainer = document.getElementById('post-enemy-stage-input-container');
+        const postEnemyStageInput = document.getElementById('post-enemy-stage-input');
+        const confirmPostEnemyStageBtn = document.getElementById('confirm-post-enemy-stage');
+
+        function showPostEnemyModal() {
+            if (character.enemies_defeated_in_stage < 10) {
+                postEnemyMessage.textContent = `You defeated enemy ${character.enemies_defeated_in_stage}/10. Ready for the next one?`;
+                continueNextFightBtn.textContent = 'Continue to Next Enemy';
+            } else {
+                postEnemyMessage.textContent = `All regular enemies defeated! The boss is next!`;
+                continueNextFightBtn.textContent = 'Face the Boss!';
+            }
+            postEnemyModal.classList.remove('hidden');
+            postEnemyStageInputContainer.classList.add('hidden'); // Hide input initially
+            postEnemyStageInput.value = ''; // Clear input
+        }
+
+        function hidePostEnemyModal() {
+            postEnemyModal.classList.add('hidden');
+        }
+
+        continueNextFightBtn.addEventListener('click', () => {
+            hidePostEnemyModal();
+            startCombat(); // Continue the combat sequence
+        });
+
+        goToStageSelectBtn.addEventListener('click', () => {
+            postEnemyStageInputContainer.classList.remove('hidden');
+            postEnemyStageInput.placeholder = `Enter target stage (1 to ${character.current_stage})`; // Can go back to current stage
+        });
+
+        confirmPostEnemyStageBtn.addEventListener('click', () => {
+            const targetStage = parseInt(postEnemyStageInput.value);
+            if (isNaN(targetStage) || targetStage < 1 || targetStage > character.current_stage) { // Can select current stage or lower
+                appendLog("Please enter a valid stage number.", 'text-red-300');
+                return;
+            }
+            character.current_stage = targetStage;
+            character.enemies_defeated_in_stage = 0; // Reset enemy count for new stage
+            character.is_boss_fight = false; // Reset boss flag
+            resetCharacterHealth();
+            hidePostEnemyModal();
+            appendLog(`Returning to Stage ${character.current_stage}. Good luck farming!`, 'text-purple-300');
+        });
+
+
+        // --- Item Generation Logic ---
+        // Added quality_multiplier to scale item stats
+        function generateItem(type, quality_multiplier = 1.0) {
+            const level = character.level;
+            const itemId = `item_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`; // Unique ID
+            let name = "";
+            let stats = {};
+            let value = 0; // Sell value
+            let buyCost = 0; // Buy cost
+            let stackable = false; // Default for equipment
+            let effect_type = null; // For potions
+            let duration = 0; // For potions
+
+            // Helper for random stat generation
+            const rand = (min, max) => Math.floor(Math.random() * (max - min + 1)) + min;
+            const randFloat = (min, max, decimals) => parseFloat((Math.random() * (max - min) + min).toFixed(decimals));
+
+            switch (type) {
+                case 'weapon':
+                    name = `Weapon Lvl ${level}`;
+                    stats.damage = rand(level * 2 + 5, level * 3 + 15) * quality_multiplier;
+                    stats.attack_speed = randFloat(0.05, 0.25, 2) * quality_multiplier; // Small speed bonus
+                    buyCost = Math.floor(stats.damage * 8 + stats.attack_speed * 100);
+                    break;
+                case 'armor':
+                    name = `Armor Lvl ${level}`;
+                    stats.health = rand(level * 5 + 10, level * 8 + 30) * quality_multiplier;
+                    stats.defense = rand(level * 0.5 + 2, level * 1.5 + 5) * quality_multiplier;
+                    stats.attack_speed = randFloat(-0.1, 0.1, 2) * quality_multiplier; // Can be negative or positive
+                    buyCost = Math.floor(stats.health * 3 + stats.defense * 15);
+                    break;
+                case 'shield':
+                    name = `Shield Lvl ${level}`;
+                    stats.defense = rand(level * 1 + 3, level * 2 + 8) * quality_multiplier;
+                    stats.attack_speed = randFloat(-0.08, 0.08, 2) * quality_multiplier; // Can be negative or positive
+                    buyCost = Math.floor(stats.defense * 20);
+                    break;
+                case 'gloves':
+                    name = `Gloves Lvl ${level}`;
+                    stats.critical_rate = randFloat(0.005, 0.03, 3) * quality_multiplier; // 0.5% to 3%
+                    stats.critical_damage_multiplier = randFloat(0.02, 0.08, 2) * quality_multiplier; // 2% to 8%
+                    buyCost = Math.floor(stats.critical_rate * 1500 + stats.critical_damage_multiplier * 800);
+                    break;
+                case 'shoes':
+                    name = `Shoes Lvl ${level}`;
+                    stats.critical_rate = randFloat(0.003, 0.02, 3) * quality_multiplier; // 0.3% to 2%
+                    stats.critical_damage_multiplier = randFloat(0.01, 0.05, 2) * quality_multiplier; // 1% to 5%
+                    buyCost = Math.floor(stats.critical_rate * 1200 + stats.critical_damage_multiplier * 600);
+                    break;
+                case 'potion':
+                    stackable = true;
+                    const potionTypes = ['health_recovery', 'damage_boost', 'attack_speed_boost', 'crit_rate_boost', 'crit_damage_boost', 'health_boost', 'gold_drop_boost', 'item_drop_boost', 'exp_boost'];
+                    effect_type = potionTypes[Math.floor(Math.random() * potionTypes.length)];
+                    duration = rand(15, 45); // Potion duration in seconds
+
+                    switch (effect_type) {
+                        case 'health_recovery':
+                            name = `Health Potion Lvl ${level}`;
+                            stats.health = rand(level * 5 + 20, level * 10 + 50) * quality_multiplier;
+                            duration = 0; // Instant effect
+                            buyCost = Math.floor(stats.health * 1.5);
+                            break;
+                        case 'damage_boost':
+                            name = `Damage Potion Lvl ${level}`;
+                            stats.damage = rand(level * 1 + 5, level * 2 + 10) * quality_multiplier; // Flat damage boost
+                            buyCost = Math.floor(stats.damage * 5 + duration * 2);
+                            break;
+                        case 'attack_speed_boost':
+                            name = `Speed Potion Lvl ${level}`;
+                            stats.attack_speed = randFloat(0.1, 0.3, 2) * quality_multiplier; // Flat APS boost
+                            buyCost = Math.floor(stats.attack_speed * 100 + duration * 2);
+                            break;
+                        case 'crit_rate_boost':
+                            name = `Crit Rate Potion Lvl ${level}`;
+                            stats.critical_rate = randFloat(0.02, 0.08, 2) * quality_multiplier; // 2% to 8% crit rate
+                            buyCost = Math.floor(stats.critical_rate * 500 + duration * 2);
+                            break;
+                        case 'crit_damage_boost':
+                            name = `Crit Damage Potion Lvl ${level}`;
+                            stats.critical_damage_multiplier = randFloat(0.1, 0.3, 2) * quality_multiplier; // 10% to 30% crit damage
+                            buyCost = Math.floor(stats.critical_damage_multiplier * 300 + duration * 2);
+                            break;
+                        case 'health_boost':
+                            name = `Max Health Potion Lvl ${level}`;
+                            stats.health = rand(level * 5 + 10, level * 10 + 30) * quality_multiplier; // Temporary max health
+                            buyCost = Math.floor(stats.health * 1.5 + duration * 2);
+                            break;
+                        case 'gold_drop_boost':
+                            name = `Gold Potion Lvl ${level}`;
+                            stats.gold_multiplier = randFloat(0.1, 0.5, 2) * quality_multiplier; // +10% to +50% gold
+                            buyCost = Math.floor(stats.gold_multiplier * 200 + duration * 2);
+                            break;
+                        case 'item_drop_boost':
+                            name = `Item Drop Potion Lvl ${level}`;
+                            stats.item_drop_chance_increase = randFloat(0.05, 0.15, 2) * quality_multiplier; // +5% to +15% drop chance
+                            buyCost = Math.floor(stats.item_drop_chance_increase * 300 + duration * 2);
+                            break;
+                        case 'exp_boost':
+                            name = `EXP Potion Lvl ${level}`;
+                            stats.exp_multiplier = randFloat(0.1, 0.5, 2) * quality_multiplier; // +10% to +50% EXP
+                            buyCost = Math.floor(stats.exp_multiplier * 200 + duration * 2);
+                            break;
+                    }
+                    break;
+                case 'treasure': // New item type for drops
+                    stackable = true;
+                    name = `Stage ${character.current_stage} Treasure`;
+                    // Value scales with stage and a small random factor
+                    value = Math.floor((10 + (level - 1) * 5) * quality_multiplier * (1 + Math.random() * 0.5));
+                    buyCost = 0; // Not sold in shop
+                    break;
+            }
+            // Ensure stats are integers for equipment, floats for rates/multipliers
+            for (const stat in stats) {
+                if (stat === 'critical_rate' || stat === 'critical_damage_multiplier' || stat === 'attack_speed' || stat === 'gold_multiplier' || stat === 'item_drop_chance_increase' || stat === 'exp_multiplier') {
+                    stats[stat] = parseFloat(stats[stat].toFixed(3)); // Keep decimals for rates/speed/multipliers
+                } else {
+                    stats[stat] = Math.floor(stats[stat]); // Integer for health, damage, defense
+                }
+            }
+
+            value = Math.max(1, Math.floor(buyCost * 0.5)); // Sell for 50% of buy cost
+            buyCost = Math.max(10, buyCost); // Minimum buy cost for buyable items
+
+            return { id: itemId, name, type, stats, value, buyCost, stackable, effect_type, duration, count: 1 };
+        }
+
+        // New function to generate boss-specific drops
+        function generateBossDrops(stage) {
+            const droppedMoney = Math.floor(100 + (stage - 1) * 50 + Math.random() * 100); // More money
+            const droppedTreasure = generateItem('treasure', 1.5); // Higher quality treasure
+
+            let droppedEquipment = null;
+            if (Math.random() < BOSS_EQUIPMENT_DROP_CHANCE) { // Check for equipment drop chance
+                const equipmentTypes = ['weapon', 'armor', 'shield', 'gloves', 'shoes'];
+                const randomEquipmentType = equipmentTypes[Math.floor(Math.random() * equipmentTypes.length)];
+                // Boss equipment quality is higher than shop (e.g., 1.2 to 1.5 times better)
+                const equipmentQualityMultiplier = 1.2 + Math.random() * 0.3;
+                droppedEquipment = generateItem(randomEquipmentType, equipmentQualityMultiplier);
+            }
+
+            return {
+                equipment: droppedEquipment, // Can be null
+                money: droppedMoney,
+                treasure: droppedTreasure
+            };
+        }
+
+
+        function generateShopItems() {
+            shopItems = [];
+            const itemTypes = ['weapon', 'armor', 'shield', 'gloves', 'shoes', 'potion']; // Added potion
+            for (let i = 0; i < SHOP_ITEM_COUNT; i++) {
+                const randomType = itemTypes[Math.floor(Math.random() * itemTypes.length)];
+                shopItems.push(generateItem(randomType, 1.0)); // Shop items have base quality (1.0)
+            }
+            appendLog("Shop items refreshed!", 'text-blue-300');
+            updateUI();
+        }
+
+        // --- Inventory & Equipped Item Logic ---
+        function addItemToInventory(item) {
+            if (item.stackable) {
+                // Check if an identical stackable item already exists
+                const existingStack = character.inventory.find(invItem =>
+                    invItem.type === item.type &&
+                    invItem.name === item.name && // Simple check for identical potion/treasure
+                    JSON.stringify(invItem.stats) === JSON.stringify(item.stats) &&
+                    invItem.effect_type === item.effect_type &&
+                    invItem.duration === item.duration &&
+                    invItem.count < MAX_STACK_COUNT
+                );
+
+                if (existingStack) {
+                    existingStack.count++;
+                    appendLog(`Added 1x ${item.name} to stack. Count: ${existingStack.count}`, 'text-blue-300');
+                    updateUI();
+                    return true;
+                }
+            }
+
+            // If not stackable, or no existing stack, add as a new item
+            if (character.inventory.length >= INVENTORY_LIMIT) {
+                appendLog("Inventory is full! Cannot pick up new items.", 'text-red-300');
+                return false;
+            }
+            character.inventory.push(item);
+            appendLog(`Added ${item.name} to inventory.`, 'text-blue-300');
+            updateUI();
+            return true;
+        }
+
+        function equipItem(itemToEquip) {
+            if (itemToEquip.type === 'potion' || itemToEquip.type === 'treasure') {
+                appendLog("Cannot equip this item type. Use/Sell it instead.", 'text-red-300');
+                return;
+            }
+
+            const currentEquipped = character.equipped_items[itemToEquip.type];
+
+            if (currentEquipped && currentEquipped.id === itemToEquip.id) {
+                appendLog(`${itemToEquip.name} is already equipped.`, 'text-yellow-300');
+                return;
+            }
+
+            // Remove from inventory
+            character.inventory = character.inventory.filter(item => item.id !== itemToEquip.id);
+
+            // If there's an item already equipped in this slot, move it to inventory
+            if (currentEquipped) {
+                addItemToInventory(currentEquipped); // This checks inventory limit
+                if (character.inventory.length >= INVENTORY_LIMIT) {
+                    appendLog("Inventory is full! Cannot unequip current item to equip new one.", 'text-red-300');
+                    // Re-add the item to inventory if it couldn't be placed
+                    character.inventory.push(itemToEquip);
+                    return;
+                }
+            }
+
+            character.equipped_items[itemToEquip.type] = itemToEquip;
+            appendLog(`Equipped ${itemToEquip.name}.`, 'text-purple-300');
+            updateUI();
+            hideItemDetailModal();
+        }
+
+        function sellItem(itemToSell) {
+            // Check if item is equipped
+            if (character.equipped_items[itemToSell.type] && character.equipped_items[itemToSell.type].id === itemToSell.id) {
+                appendLog("Cannot sell an equipped item. Please unequip it first.", 'text-red-300');
+                return;
+            }
+
+            character.money += itemToSell.value;
+
+            if (itemToSell.stackable && itemToSell.count > 1) {
+                itemToSell.count--;
+                appendLog(`Sold 1x ${itemToSell.name} for ${itemToSell.value} money. Remaining: ${itemToSell.count}`, 'text-green-300');
+            } else {
+                character.inventory = character.inventory.filter(item => item.id !== itemToSell.id);
+                appendLog(`Sold ${itemToSell.name} for ${itemToSell.value} money.`, 'text-green-300');
+            }
+            updateUI();
+            hideItemDetailModal();
+        }
+
+        function buyItem(itemToBuy) {
+            if (character.money < itemToBuy.buyCost) {
+                appendLog(`Not enough money to buy ${itemToBuy.name}. Needs ${itemToBuy.buyCost} money.`, 'text-red-300');
+                return;
+            }
+
+            // For buying, always create a new item instance to prevent direct modification of shop item
+            const itemCopy = { ...itemToBuy };
+            if (itemCopy.stackable) {
+                itemCopy.count = 1; // Start with 1 for new stackable item
+            }
+
+            if (addItemToInventory(itemCopy)) { // addItemToInventory handles stacking and inventory limit
+                character.money -= itemToBuy.buyCost;
+                shopItems = shopItems.filter(item => item.id !== itemToBuy.id); // Remove from shop
+                appendLog(`Bought ${itemToBuy.name} for ${itemToBuy.buyCost} money.`, 'text-green-300');
+                updateUI();
+                hideItemDetailModal();
+            }
+        }
+
+        function usePotion(potion) {
+            if (potion.type !== 'potion') {
+                appendLog("This is not a potion!", 'text-red-300');
+                return;
+            }
+
+            if (potion.count <= 0) {
+                appendLog("No more of this potion left!", 'text-red-300');
+                return;
+            }
+
+            // Apply instant effects
+            if (potion.effect_type === 'health_recovery') {
+                const healedAmount = Math.min(potion.stats.health, effective_stats.max_health - character.health);
+                character.health += healedAmount;
+                appendLog(`Used ${potion.name}. Recovered ${Math.floor(healedAmount)} health.`, 'text-blue-300');
+            } else {
+                // Apply temporary buffs
+                const activePotion = {
+                    ...potion,
+                    end_time: Date.now() + (potion.duration * 1000) // Convert seconds to milliseconds
+                };
+                character.active_potions.push(activePotion);
+                appendLog(`Used ${potion.name}. Effect lasts for ${potion.duration} seconds.`, 'text-blue-300');
+            }
+
+            // Decrease potion count and remove if empty
+            potion.count--;
+            if (potion.count <= 0) {
+                character.inventory = character.inventory.filter(item => item.id !== potion.id);
+            }
+            updateUI();
+            hideItemDetailModal();
+        }
+
+        // --- Quest System Logic (NEW) ---
+        function generateQuest(stage, isRepeatable = false) {
+            const questTypes = [
+                { type: 'kill_enemies', weight: 0.6 },
+                { type: 'kill_boss', weight: 0.1 },
+                { type: 'submit_treasure', weight: 0.15 },
+                { type: 'submit_potion', weight: 0.15 }
+            ];
+
+            let availableQuestTypes = questTypes;
+            if (!isRepeatable) {
+                // Filter out completed non-repeatable quests for the current stage
+                availableQuestTypes = questTypes.filter(qType => {
+                    if (qType.type === 'kill_boss' && character.completed_non_repeatable_quest_ids.has(`kill_boss_stage_${stage}`)) {
+                        return false;
+                    }
+                    // Add more specific checks for other non-repeatable quests if needed
+                    return true;
+                });
+                // If all non-repeatable quests for this stage are done, force a repeatable one
+                // This logic is now mostly handled by the refreshAllQuests to ensure 2 current stage quests
+                // and 4 previous stage quests. The 'isRepeatable' parameter here is more about the *initial*
+                // generation of a quest, not the overall quest pool.
+            }
+            
+            let actualIsRepeatable = isRepeatable; // Use the passed parameter for initial generation
+
+            // Select quest type based on weights
+            const totalWeight = availableQuestTypes.reduce((sum, q) => sum + q.weight, 0);
+            let randomWeight = Math.random() * totalWeight;
+            let selectedQuestType = null;
+            for (const qType of availableQuestTypes) {
+                randomWeight -= qType.weight;
+                if (randomWeight <= 0) {
+                    selectedQuestType = qType.type;
+                    break;
+                }
+            }
+            if (!selectedQuestType && availableQuestTypes.length > 0) { // Fallback if no type selected (shouldn't happen with proper weights)
+                selectedQuestType = availableQuestTypes[0].type;
+            } else if (!selectedQuestType) { // If no types at all, default to a basic kill enemies repeatable
+                selectedQuestType = 'kill_enemies';
+                actualIsRepeatable = true; // Ensure it's repeatable if no other options
+            }
+
+
+            let description = "";
+            let targetCount = 0;
+            let targetItem = null; // for submit quests
+            let rewardType = Math.random() < 0.5 ? 'money' : 'exp';
+            let rewardAmount = 0;
+            let questId = `quest_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+
+
+            switch (selectedQuestType) {
+                case 'kill_enemies':
+                    targetCount = Math.floor(5 + stage * 0.5); // 5-10 enemies
+                    description = `Defeat ${targetCount} enemies in Stage ${stage}.`;
+                    rewardAmount = Math.floor(50 + stage * 10 + targetCount * 5);
+                    break;
+                case 'kill_boss':
+                    targetCount = 1;
+                    description = `Defeat the boss of Stage ${stage}.`;
+                    rewardAmount = Math.floor(200 + stage * 50);
+                    actualIsRepeatable = false; // Boss quests are typically non-repeatable
+                    questId = `kill_boss_stage_${stage}`; // Specific ID for boss quests
+                    break;
+                case 'submit_treasure':
+                    targetCount = Math.floor(1 + stage * 0.1); // 1-2 treasures
+                    targetItem = { type: 'treasure', name: `Stage ${stage} Treasure` }; // Specific treasure from this stage
+                    description = `Submit ${targetCount} Stage ${stage} Treasure(s).`;
+                    rewardAmount = Math.floor(100 + stage * 20 + targetCount * 10);
+                    break;
+                case 'submit_potion':
+                    targetCount = Math.floor(1 + stage * 0.05); // 1 potion
+                    const potionTypes = ['Health Potion', 'Damage Potion', 'Speed Potion', 'Crit Rate Potion', 'Crit Damage Potion', 'Max Health Potion', 'Gold Potion', 'Item Drop Potion', 'EXP Potion'];
+                    targetItem = { type: 'potion', name: potionTypes[Math.floor(Math.random() * potionTypes.length)] };
+                    description = `Submit ${targetCount} ${targetItem.name}(s).`;
+                    rewardAmount = Math.floor(80 + stage * 15 + targetCount * 5);
+                    break;
+            }
+
+            // Adjust reward based on type
+            if (rewardType === 'exp') {
+                rewardAmount = Math.floor(rewardAmount * 0.5); // EXP rewards might be slightly lower in value than money
+            }
+
+            return {
+                id: questId,
+                type: selectedQuestType,
+                description,
+                target_stage: stage,
+                target_count: targetCount,
+                target_item: targetItem,
+                current_progress: 0,
+                reward_type: rewardType,
+                reward_amount: rewardAmount,
+                repeatable: actualIsRepeatable,
+                completed: false,
+                active: true
+            };
+        }
+
+        function refreshAllQuests() {
+            appendLog("Quests are refreshing!", 'text-yellow-300');
+            character.active_quests = []; // Clear all current quests
+            character.completed_non_repeatable_quest_ids.clear(); // Clear completed non-repeatable IDs for new pool
+
+            // Generate 2 quests for the current highest stage
+            for (let i = 0; i < 2; i++) {
+                character.active_quests.push(generateQuest(character.current_stage));
+            }
+
+            // Generate 4 quests for previous stages (or current stage if it's stage 1)
+            for (let i = 0; i < 4; i++) {
+                let targetStage = character.current_stage;
+                if (character.current_stage > 1) {
+                    // Random stage from 1 to current_stage - 1
+                    targetStage = Math.floor(Math.random() * (character.current_stage - 1)) + 1;
+                }
+                character.active_quests.push(generateQuest(targetStage, true)); // These are generally repeatable
+            }
+            appendLog("New quests available!", 'text-green-400');
+            startQuestRefreshTimer(); // Restart the timer for the next refresh
+            updateUI();
+        }
+
+        function startQuestRefreshTimer() {
+            clearInterval(questRefreshTimerInterval); // Clear any existing timer
+            timeToNextQuestRefresh = QUEST_REFRESH_DURATION_SECONDS; // Reset countdown
+
+            questRefreshTimerInterval = setInterval(() => {
+                timeToNextQuestRefresh--;
+                if (timeToNextQuestRefresh <= 0) {
+                    refreshAllQuests();
+                } else {
+                    updateUI(); // Update UI to show countdown
+                }
+            }, 1000); // Update every second
+        }
+
+        function renderActiveQuests() {
+            const questsContainer = document.getElementById('active-quests-container');
+            questsContainer.innerHTML = ''; // Clear previous
+
+            if (character.active_quests.length === 0) {
+                questsContainer.innerHTML = '<p id="no-active-quests-message" class="text-center text-gray-400">No active quests.</p>';
+            } else {
+                character.active_quests.forEach(quest => {
+                    const questCard = document.createElement('div');
+                    questCard.className = 'bg-gray-800 p-3 rounded-md mb-2';
+                    let progressText = '';
+                    if (quest.type.startsWith('kill_')) {
+                        progressText = `Progress: ${quest.current_progress}/${quest.target_count}`;
+                    } else if (quest.type.startsWith('submit_')) {
+                        progressText = `Progress: ${quest.current_progress}/${quest.target_count}`;
+                    }
+
+                    let rewardText = `${quest.reward_amount} ${quest.reward_type === 'money' ? 'Money' : 'EXP'}`;
+                    if (quest.repeatable) {
+                        rewardText += ' (Repeatable)';
+                    }
+
+                    questCard.innerHTML = `
+                        <p class="font-bold text-indigo-300">${quest.description}</p>
+                        <p class="text-sm text-gray-400">${progressText}</p>
+                        <p class="text-sm text-green-400">Reward: ${rewardText}</p>
+                        <button class="btn btn-success btn-sm mt-2 w-full ${quest.current_progress >= quest.target_count ? '' : 'opacity-50 cursor-not-allowed'}"
+                                data-quest-id="${quest.id}" ${quest.current_progress >= quest.target_count ? '' : 'disabled'}>
+                            Claim Reward
+                        </button>
+                    `;
+                    questsContainer.appendChild(questCard);
+                });
+
+                // Add event listeners for claim buttons
+                questsContainer.querySelectorAll('.btn-success.btn-sm').forEach(button => {
+                    button.addEventListener('click', (event) => {
+                        const questId = event.target.dataset.questId;
+                        claimQuestReward(questId);
+                    });
+                });
+            }
+        }
+
+        function claimQuestReward(questId) {
+            const questIndex = character.active_quests.findIndex(q => q.id === questId);
+            if (questIndex === -1) {
+                appendLog("Quest not found!", 'text-red-300');
+                return;
+            }
+
+            const quest = character.active_quests[questIndex];
+            if (quest.current_progress < quest.target_count) {
+                appendLog("Quest not yet completed!", 'text-red-300');
+                return;
+            }
+
+            if (quest.reward_type === 'money') {
+                character.money += quest.reward_amount;
+                appendLog(`Claimed ${quest.reward_amount} money from quest: "${quest.description}"`, 'text-green-300');
+            } else if (quest.reward_type === 'exp') {
+                character.exp += quest.reward_amount;
+                checkLevelUp();
+                appendLog(`Claimed ${quest.reward_amount} EXP from quest: "${quest.description}"`, 'text-green-300');
+            }
+
+            if (quest.repeatable) {
+                quest.current_progress = 0; // Reset progress for repeatable quests
+                appendLog(`Quest reset: "${quest.description}"`, 'text-blue-300');
+            } else {
+                character.completed_non_repeatable_quest_ids.add(quest.id); // Mark as completed
+                character.active_quests.splice(questIndex, 1); // Remove from active quests
+                appendLog(`Quest completed: "${quest.description}"`, 'text-blue-300');
+            }
+            updateUI();
+        }
+
+        function submitItemForQuest(itemToSubmit) {
+            const matchingQuest = character.active_quests.find(q =>
+                !q.completed &&
+                q.type.startsWith('submit_') &&
+                q.target_stage === character.current_stage &&
+                q.target_item &&
+                q.target_item.type === itemToSubmit.type &&
+                q.target_item.name === itemToSubmit.name && // Simple name match for now
+                q.current_progress < q.target_count
+            );
+
+            if (!matchingQuest) {
+                appendLog("This item is not needed for any active quest.", 'text-red-300');
+                return;
+            }
+
+            // Check if item is equipped
+            if (character.equipped_items[itemToSubmit.type] && character.equipped_items[itemToSubmit.type].id === itemToSubmit.id) {
+                appendLog("Cannot submit an equipped item. Please unequip it first.", 'text-red-300');
+                return;
+            }
+
+            // Consume the item
+            if (itemToSubmit.stackable && itemToSubmit.count > 1) {
+                itemToSubmit.count--;
+                appendLog(`Submitted 1x ${itemToSubmit.name} for quest. Remaining: ${itemToSubmit.count}`, 'text-blue-300');
+            } else {
+                character.inventory = character.inventory.filter(item => item.id !== itemToSubmit.id);
+                appendLog(`Submitted ${itemToSubmit.name} for quest.`, 'text-blue-300');
+            }
+
+            matchingQuest.current_progress++;
+            appendLog(`Quest Progress for "${matchingQuest.description}": ${matchingQuest.current_progress}/${matchingQuest.target_count}`, 'text-indigo-300');
+
+            updateUI();
+            hideItemDetailModal(); // Close modal after submission
+        }
+
+
+        // --- Rendering Functions ---
+        function renderEquippedItems() {
+            const equippedContainer = document.getElementById('equipped-items-container');
+            equippedContainer.innerHTML = ''; // Clear previous
+
+            const slots = ['weapon', 'armor', 'shield', 'gloves', 'shoes'];
+            slots.forEach(slot => {
+                const item = character.equipped_items[slot];
+                const itemCard = document.createElement('div');
+                itemCard.className = 'item-card bg-gray-800 text-center py-4';
+                itemCard.id = `equipped-${slot}`;
+
+                if (item) {
+                    itemCard.innerHTML = `<p class="item-name">${item.name}</p>`;
+                    itemCard.classList.add('equipped'); // Add equipped class for styling
+                    itemCard.onclick = () => showItemDetailModal(item, 'equipped');
+                } else {
+                    itemCard.textContent = `${slot.charAt(0).toUpperCase() + slot.slice(1)} Slot`;
+                }
+                equippedContainer.appendChild(itemCard);
+            });
+        }
+
+        function renderInventory() {
+            const inventoryContainer = document.getElementById('inventory-container');
+            inventoryContainer.innerHTML = ''; // Clear previous
+            document.getElementById('inventory-count').textContent = character.inventory.length;
+
+            if (character.inventory.length === 0) {
+                inventoryContainer.innerHTML = '<p id="empty-inventory-message" class="col-span-full text-center text-gray-400">Inventory is empty.</p>';
+            } else {
+                character.inventory.forEach(item => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'item-card';
+                    let stackCountHtml = item.stackable ? `<span class="item-stack-count">x${item.count}</span>` : '';
+                    itemCard.innerHTML = `
+                        <p class="item-name">${item.name}</p>
+                        <div class="item-stats">
+                            ${item.stats.health ? `<p>+${item.stats.health} Health</p>` : ''}
+                            ${item.stats.damage ? `<p>+${item.stats.damage} Damage</p>` : ''}
+                            ${item.stats.defense ? `<p>+${item.stats.defense} Defense</p>` : ''}
+                            ${item.stats.critical_rate ? `<p>+${(item.stats.critical_rate * 100).toFixed(1)}% Crit Rate</p>` : ''}
+                            ${item.stats.critical_damage_multiplier ? `<p>+${(item.stats.critical_damage_multiplier * 100).toFixed(1)}% Crit Dmg</p>` : ''}
+                            ${item.stats.attack_speed ? `<p>${item.stats.attack_speed > 0 ? '+' : ''}${item.stats.attack_speed.toFixed(2)} APS</p>` : ''}
+                            ${item.stats.gold_multiplier ? `<p>+${(item.stats.gold_multiplier * 100).toFixed(1)}% Gold Drop</p>` : ''}
+                            ${item.stats.item_drop_chance_increase ? `<p>+${(item.stats.item_drop_chance_increase * 100).toFixed(1)}% Item Drop Chance</p>` : ''}
+                            ${item.stats.exp_multiplier ? `<p>+${(item.stats.exp_multiplier * 100).toFixed(1)}% EXP Gain</p>` : ''}
+                            ${item.effect_type && item.duration > 0 ? `<p>Duration: ${item.duration}s</p>` : ''}
+                        </div>
+                        <p class="item-cost">${item.type === 'treasure' ? 'Value' : 'Sell'}: ${item.value} Money</p>
+                        ${stackCountHtml}
+                    `;
+                    itemCard.onclick = () => showItemDetailModal(item, 'inventory');
+                    inventoryContainer.appendChild(itemCard);
+                });
+            }
+        }
+
+        function renderShop() {
+            const shopContainer = document.getElementById('shop-container');
+            shopContainer.innerHTML = ''; // Clear previous
+
+            if (shopItems.length === 0) {
+                shopContainer.innerHTML = '<p id="empty-shop-message" class="col-span-full text-center text-gray-400">Click \'Refresh Shop\' to see items.</p>';
+            } else {
+                shopItems.forEach(item => {
+                    const itemCard = document.createElement('div');
+                    itemCard.className = 'item-card';
+                    itemCard.innerHTML = `
+                        <p class="item-name">${item.name}</p>
+                        <div class="item-stats">
+                            ${item.stats.health ? `<p>+${item.stats.health} Health</p>` : ''}
+                            ${item.stats.damage ? `<p>+${item.stats.damage} Damage</p>` : ''}
+                            ${item.stats.defense ? `<p>+${item.stats.defense} Defense</p>` : ''}
+                            ${item.stats.critical_rate ? `<p>+${(item.stats.critical_rate * 100).toFixed(1)}% Crit Rate</p>` : ''}
+                            ${item.stats.critical_damage_multiplier ? `<p>+${(item.stats.critical_damage_multiplier * 100).toFixed(1)}% Crit Dmg</p>` : ''}
+                            ${item.stats.attack_speed ? `<p>${item.stats.attack_speed > 0 ? '+' : ''}${item.stats.attack_speed.toFixed(2)} APS</p>` : ''}
+                            ${item.stats.gold_multiplier ? `<p>+${(item.stats.gold_multiplier * 100).toFixed(1)}% Gold Drop</p>` : ''}
+                            ${item.stats.item_drop_chance_increase ? `<p>+${(item.stats.item_drop_chance_increase * 100).toFixed(1)}% Item Drop Chance</p>` : ''}
+                            ${item.stats.exp_multiplier ? `<p>+${(item.stats.exp_multiplier * 100).toFixed(1)}% EXP Gain</p>` : ''}
+                            ${item.effect_type && item.duration > 0 ? `<p>Duration: ${item.duration}s</p>` : ''}
+                        </div>
+                        <p class="item-cost">Buy: ${item.buyCost} Money</p>
+                    `;
+                    itemCard.onclick = () => showItemDetailModal(item, 'shop');
+                    shopContainer.appendChild(itemCard);
+                });
+            }
+        }
+
+        function renderActivePotions() {
+            const activePotionsContainer = document.getElementById('active-potions-container');
+            activePotionsContainer.innerHTML = ''; // Clear previous
+
+            if (character.active_potions.length === 0) {
+                activePotionsContainer.innerHTML = '<p id="no-active-potions" class="text-center text-gray-400">No active buffs.</p>';
+            } else {
+                const now = Date.now();
+                character.active_potions.forEach(potion => {
+                    const timeLeft = Math.max(0, Math.floor((potion.end_time - now) / 1000));
+                    const potionEntry = document.createElement('p');
+                    potionEntry.className = 'active-potion-entry';
+                    let statText = '';
+                    for (const stat in potion.stats) {
+                        const value = potion.stats[stat];
+                        if (stat === 'critical_rate' || stat === 'item_drop_chance_increase') statText += `+${(value * 100).toFixed(1)}% ${stat.replace(/_/g, ' ').replace('critical', 'Crit').replace('chance increase', 'Chance')} `;
+                        else if (stat === 'critical_damage_multiplier' || stat === 'gold_multiplier' || stat === 'exp_multiplier') statText += `+${(value * 100).toFixed(1)}% ${stat.replace(/_/g, ' ').replace('critical', 'Crit').replace('multiplier', 'Gain')} `;
+                        else if (stat === 'attack_speed') statText += `${value > 0 ? '+' : ''}${value.toFixed(2)} APS `;
+                        else statText += `+${value} ${stat.charAt(0).toUpperCase() + stat.slice(1)} `;
+                    }
+                    potionEntry.textContent = `${potion.name} (${statText.trim()}) - ${timeLeft}s remaining`;
+                    activePotionsContainer.appendChild(potionEntry);
+                });
+            }
+        }
+
+        // --- Item Detail Modal Logic ---
+        const itemDetailModal = document.getElementById('item-detail-modal');
+        const itemDetailName = document.getElementById('item-detail-name');
+        const itemDetailStats = document.getElementById('item-detail-stats');
+        const itemDetailValue = document.getElementById('item-detail-value');
+        const itemDetailActionButton = document.getElementById('item-detail-action-btn');
+        const itemDetailSellBtn = document.getElementById('item-detail-sell');
+        const itemDetailCloseBtn = document.getElementById('item-detail-close');
+        const itemDetailSubmitQuestBtn = document.getElementById('item-detail-submit-quest'); // New button
+
+        let currentSelectedItem = null; // To hold the item object for modal actions
+
+        function showItemDetailModal(item, context) {
+            currentSelectedItem = item;
+            itemDetailName.textContent = item.name;
+            itemDetailStats.innerHTML = `
+                <p>Type: ${item.type.charAt(0).toUpperCase() + item.type.slice(1)}</p>
+                ${item.stats.health ? `<p>Health: +${item.stats.health}</p>` : ''}
+                ${item.stats.damage ? `<p>Damage: +${item.stats.damage}</p>` : ''}
+                ${item.stats.defense ? `<p>Defense: +${item.stats.defense}</p>` : ''}
+                ${item.stats.critical_rate ? `<p>Crit Rate: +${(item.stats.critical_rate * 100).toFixed(1)}%</p>` : ''}
+                ${item.stats.critical_damage_multiplier ? `<p>Crit Damage: +${(item.stats.critical_damage_multiplier * 100).toFixed(1)}%</p>` : ''}
+                ${item.stats.attack_speed ? `<p>Attack Speed: ${item.stats.attack_speed > 0 ? '+' : ''}${item.stats.attack_speed.toFixed(2)} APS</p>` : ''}
+                ${item.stats.gold_multiplier ? `<p>Gold Drop: +${(item.stats.gold_multiplier * 100).toFixed(1)}%</p>` : ''}
+                ${item.stats.item_drop_chance_increase ? `<p>Item Drop Chance: +${(item.stats.item_drop_chance_increase * 100).toFixed(1)}%</p>` : ''}
+                ${item.stats.exp_multiplier ? `<p>EXP Gain: +${(item.stats.exp_multiplier * 100).toFixed(1)}%</p>` : ''}
+                ${item.effect_type && item.duration > 0 ? `<p>Duration: ${item.duration}s</p>` : ''}
+                ${item.effect_type && item.duration === 0 ? `<p>Effect: Instant</p>` : ''}
+            `;
+
+            itemDetailActionButton.classList.add('hidden');
+            itemDetailSellBtn.classList.add('hidden');
+            itemDetailSubmitQuestBtn.classList.add('hidden'); // Hide by default
+
+            if (context === 'shop') {
+                itemDetailValue.textContent = `Buy Cost: ${item.buyCost} Money`;
+                itemDetailActionButton.textContent = 'Buy Item';
+                itemDetailActionButton.classList.remove('hidden');
+                itemDetailActionButton.onclick = () => buyItem(currentSelectedItem);
+            } else if (context === 'inventory') {
+                itemDetailValue.textContent = `Sell Value: ${item.value} Money`;
+                if (item.type === 'potion') {
+                    itemDetailActionButton.textContent = 'Use Potion';
+                    itemDetailActionButton.classList.remove('hidden');
+                    itemDetailActionButton.onclick = () => usePotion(currentSelectedItem);
+                } else if (item.type === 'treasure') {
+                    itemDetailActionButton.textContent = 'Sell Treasure'; // Specific button for treasure
+                    itemDetailActionButton.classList.remove('hidden');
+                    itemDetailActionButton.onclick = () => sellItem(currentSelectedItem);
+                }
+                else {
+                    itemDetailActionButton.textContent = 'Equip';
+                    itemDetailActionButton.classList.remove('hidden');
+                    itemDetailActionButton.onclick = () => equipItem(currentSelectedItem);
+                }
+                itemDetailSellBtn.classList.remove('hidden');
+                itemDetailSellBtn.onclick = () => sellItem(currentSelectedItem);
+
+                // Check if this item is needed for any active quest
+                const matchingQuest = character.active_quests.find(q =>
+                    !q.completed &&
+                    q.type.startsWith('submit_') &&
+                    q.target_stage === character.current_stage &&
+                    q.target_item &&
+                    q.target_item.type === item.type &&
+                    q.target_item.name === item.name && // Simple name match for now
+                    q.current_progress < q.target_count
+                );
+                if (matchingQuest) {
+                    itemDetailSubmitQuestBtn.classList.remove('hidden');
+                }
+
+            } else if (context === 'equipped') {
+                itemDetailValue.textContent = `Sell Value: ${item.value} Money`;
+                itemDetailActionButton.textContent = 'Unequip';
+                itemDetailActionButton.classList.remove('hidden');
+                itemDetailActionButton.onclick = () => unequipItem(currentSelectedItem);
+                itemDetailSellBtn.classList.remove('hidden');
+                itemDetailSellBtn.onclick = () => sellItem(currentSelectedItem); // Allow selling equipped after unequip
+            }
+
+            itemDetailModal.classList.remove('hidden');
+        }
+
+        function hideItemDetailModal() {
+            itemDetailModal.classList.add('hidden');
+            currentSelectedItem = null;
+        }
+
+        function unequipItem(itemToUnequip) {
+            if (addItemToInventory(itemToUnequip)) { // Try to add to inventory first
+                character.equipped_items[itemToUnequip.type] = null;
+                appendLog(`Unequipped ${itemToUnequip.name}.`, 'text-purple-300');
+            } else {
+                appendLog("Inventory is full! Cannot unequip item.", 'text-red-300');
+            }
+            updateUI();
+            hideItemDetailModal();
+        }
+
+
+        // --- Event Listeners ---
+        document.getElementById('start-combat').addEventListener('click', startCombat);
+        document.getElementById('continue-stage').addEventListener('click', startCombat);
+
+        document.getElementById('upgrade-health').addEventListener('click', () => upgradeStat('health'));
+        document.getElementById('upgrade-damage').addEventListener('click', () => upgradeStat('damage'));
+        document.getElementById('upgrade-defense').addEventListener('click', () => upgradeStat('defense'));
+        document.getElementById('upgrade-crit-rate').addEventListener('click', () => upgradeStat('crit_rate'));
+        document.getElementById('upgrade-crit-damage').addEventListener('click', () => upgradeStat('crit_damage'));
+        document.getElementById('upgrade-attack-speed').addEventListener('click', () => upgradeStat('attack_speed'));
+
+        document.getElementById('refresh-shop').addEventListener('click', generateShopItems);
+
+        itemDetailCloseBtn.addEventListener('click', hideItemDetailModal);
+        itemDetailSubmitQuestBtn.addEventListener('click', () => submitItemForQuest(currentSelectedItem)); // New event listener
+
+        // Event listener for "Get New Quest" button
+        document.getElementById('get-new-quest-btn').addEventListener('click', () => {
+            // This button now triggers a full refresh, not just adding one quest
+            refreshAllQuests();
+        });
+
+
+        // New event listeners for post-enemy modal
+        continueNextFightBtn.addEventListener('click', () => {
+            hidePostEnemyModal();
+            startCombat(); // Continue the combat sequence
+        });
+
+        goToStageSelectBtn.addEventListener('click', () => {
+            postEnemyStageInputContainer.classList.remove('hidden');
+            postEnemyStageInput.placeholder = `Enter target stage (1 to ${character.current_stage})`; // Can go back to current stage
+        });
+
+        confirmPostEnemyStageBtn.addEventListener('click', () => {
+            const targetStage = parseInt(postEnemyStageInput.value);
+            if (isNaN(targetStage) || targetStage < 1 || targetStage > character.current_stage) { // Can select current stage or lower
+                appendLog("Please enter a valid stage number.", 'text-red-300');
+                return;
+            }
+            character.current_stage = targetStage;
+            character.enemies_defeated_in_stage = 0; // Reset enemy count for new stage
+            character.is_boss_fight = false; // Reset boss flag
+            resetCharacterHealth();
+            hidePostEnemyModal();
+            appendLog(`Returning to Stage ${character.current_stage}. Good luck farming!`, 'text-purple-300');
+        });
+
+
+        // Initial setup
+        window.onload = () => {
+            character.exp_to_next_level = getExpToNextLevel(character.level); // Set initial EXP needed
+            calculateEffectiveStats(); // Initial calculation
+            
+            // Initial quest generation (now generates 6 quests)
+            refreshAllQuests(); // Call refreshAllQuests to populate initial 6 quests and start timer
+            
+            updateUI();
+            // Do not spawn enemy immediately, wait for player to click start combat
+            appendLog("Welcome to the Idle Shooter Game! Click 'Start Combat' to begin.", 'text-blue-200');
+            appendLog("Each stage has 10 enemies, then a boss! Defeat them for loot!", 'text-blue-200');
+            generateShopItems(); // Populate shop initially
+        };
+
+    </script>
+</body>
+</html>
